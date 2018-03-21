@@ -77,7 +77,8 @@ class SceneTreeDock : public VBoxContainer {
 		TOOL_SCENE_OPEN,
 		TOOL_SCENE_CLEAR_INHERITANCE,
 		TOOL_SCENE_CLEAR_INHERITANCE_CONFIRM,
-		TOOL_SCENE_OPEN_INHERITED
+		TOOL_SCENE_OPEN_INHERITED,
+		TOOL_RENAME
 	};
 
 	enum {
@@ -116,6 +117,9 @@ class SceneTreeDock : public VBoxContainer {
 	EditorSubScene *import_subscene_dialog;
 	EditorFileDialog *new_scene_from_dialog;
 
+	ConfirmationDialog *rename_dialog;
+	LineEdit *rename_dialog_text;
+
 	LineEdit *filter;
 	TextureRect *filter_icon;
 
@@ -144,6 +148,7 @@ class SceneTreeDock : public VBoxContainer {
 
 	void _node_selected();
 	void _node_renamed();
+	void _node_rename_operation_confirm();
 	void _script_created(Ref<Script> p_script);
 
 	void _delete_confirm();

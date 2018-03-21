@@ -153,6 +153,9 @@ public:
 
 	Tree *get_scene_tree() { return tree; }
 
+	void edit_selected();
+	void rename_node(Node *n, String new_name);
+
 	SceneTreeEditor(bool p_label = true, bool p_can_rename = false, bool p_can_open_instance = false);
 	~SceneTreeEditor();
 };

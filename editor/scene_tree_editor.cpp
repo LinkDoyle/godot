@@ -719,6 +719,39 @@ void SceneTreeEditor::set_editor_selection(EditorSelection *p_selection) {
 	editor_selection->connect("selection_changed", this, "_selection_changed");
 }
 
+void SceneTreeEditor::edit_selected() {
+
+	tree->edit_selected();
+}
+
+void SceneTreeEditor::rename_node(Node *n, String new_name) {
+
+	ERR_FAIL_COND(!n);
+
+	if (new_name.find(".") != -1 || new_name.find("/") != -1) {
+
+		error->set_text(TTR("Invalid node name, the following characters are not allowed:") + "\n  \".\", \"/\"");
+		error->popup_centered_minsize();
+		new_name = n->get_name();
+	}
+
+	if (new_name == n->get_name())
+		return;
+
+	if (!undo_redo) {
+		// n->set_name(new_name);
+		// which->set_metadata(0, n->get_path());
+		// emit_signal("node_renamed");
+		return;
+	} else {
+		undo_redo->create_action(TTR("Rename Node"));
+		emit_signal("node_prerename", n, new_name);
+		undo_redo->add_do_method(this, "_rename_node", n->get_instance_id(), new_name);
+		undo_redo->add_undo_method(this, "_rename_node", n->get_instance_id(), n->get_name());
+		undo_redo->commit_action();
+	}
+}
+
 void SceneTreeEditor::_update_selection(TreeItem *item) {
 
 	ERR_FAIL_COND(!item);

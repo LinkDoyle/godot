@@ -101,6 +101,8 @@ void SceneTreeDock::_unhandled_key_input(Ref<InputEvent> p_event) {
 		_tool_selected(TOOL_COPY_NODE_PATH);
 	} else if (ED_IS_SHORTCUT("scene_tree/delete", p_event)) {
 		_tool_selected(TOOL_ERASE);
+	} else if (ED_IS_SHORTCUT("scene_tree/rename_child_node", p_event)) {
+		_tool_selected(TOOL_RENAME);
 	}
 }
 
@@ -722,6 +724,22 @@ void SceneTreeDock::_tool_selected(int p_tool, bool p_confirm_override) {
 				}
 			}
 		} break;
+		case TOOL_RENAME: {
+			//scene_tree->edit_selected();
+			List<Node *> selection = editor_selection->get_selected_node_list();
+			List<Node *>::Element *e = selection.front();
+			if (e) {
+				Node *node = e->get();
+				if (node) {
+					String name = node->get_name();
+					rename_dialog->set_title(TTR("Renaming node: ") + name);
+					rename_dialog_text->set_text(name);
+					rename_dialog_text->select(0, name.length());
+					rename_dialog->popup_centered_minsize(Size2(250, 80) * EDSCALE);
+					rename_dialog_text->grab_focus();
+				}
+			}
+		} break;
 		default: {
 
 			if (p_tool >= EDIT_SUBRESOURCE_BASE) {
@@ -833,6 +851,26 @@ void SceneTreeDock::_node_selected() {
 void SceneTreeDock::_node_renamed() {
 
 	_node_selected();
+}
+
+void SceneTreeDock::_node_rename_operation_confirm() {
+
+	String new_name = rename_dialog_text->get_text().strip_edges();
+	if (new_name.length() == 0) {
+		EditorNode::get_singleton()->show_warning(TTR("No name provided."));
+		return;
+	}
+
+	List<Node *> selection = editor_selection->get_selected_node_list();
+	List<Node *>::Element *e = selection.front();
+	if (e) {
+		Node *node = e->get();
+		if (node) {
+			// node->set_name(new_name);
+			// update_tree();
+			scene_tree->rename_node(node, new_name);
+		}
+	}
 }
 
 void SceneTreeDock::_set_owners(Node *p_owner, const Array &p_nodes) {
@@ -1928,6 +1966,8 @@ void SceneTreeDock::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("instance"), &SceneTreeDock::instance);
 
+	ClassDB::bind_method(D_METHOD("_node_rename_operation_confirm"), &SceneTreeDock::_node_rename_operation_confirm);
+
 	ADD_SIGNAL(MethodInfo("remote_tree_selected"));
 }
 
@@ -1947,6 +1987,7 @@ SceneTreeDock::SceneTreeDock(EditorNode *p_editor, Node *p_scene_root, EditorSel
 	ToolButton *tb;
 
 	ED_SHORTCUT("scene_tree/add_child_node", TTR("Add Child Node"), KEY_MASK_CMD | KEY_A);
+	ED_SHORTCUT("scene_tree/rename_child_node", TTR("Rename Child Node"), KEY_MASK_CMD | KEY_R);
 	ED_SHORTCUT("scene_tree/instance_scene", TTR("Instance Child Scene"));
 	ED_SHORTCUT("scene_tree/change_node_type", TTR("Change Type"));
 	ED_SHORTCUT("scene_tree/attach_script", TTR("Attach Script"));
@@ -2072,6 +2113,17 @@ SceneTreeDock::SceneTreeDock(EditorNode *p_editor, Node *p_scene_root, EditorSel
 	new_scene_from_dialog->set_mode(EditorFileDialog::MODE_SAVE_FILE);
 	add_child(new_scene_from_dialog);
 	new_scene_from_dialog->connect("file_selected", this, "_new_scene_from");
+
+	rename_dialog = memnew(ConfirmationDialog);
+	VBoxContainer *rename_dialog_vb = memnew(VBoxContainer);
+	rename_dialog->add_child(rename_dialog_vb);
+
+	rename_dialog_text = memnew(LineEdit);
+	rename_dialog_vb->add_margin_child(TTR("Name:"), rename_dialog_text);
+	rename_dialog->get_ok()->set_text(TTR("Rename"));
+	add_child(rename_dialog);
+	rename_dialog->register_text_enter(rename_dialog_text);
+	rename_dialog->connect("confirmed", this, "_node_rename_operation_confirm");
 
 	menu = memnew(PopupMenu);
 	add_child(menu);
